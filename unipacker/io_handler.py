@@ -20,7 +20,7 @@ class IOHandler(object):
         unpacker, _ = get_unpacker(sample)
         event = threading.Event()
         client = SimpleClient(event)
-        heartbeat = RepeatedTimer(120, print, "- still running -", file=sys.stderr)
+        heartbeat = RepeatedTimer(10, print, "- still running -", file=sys.stderr)
 
         if partition_by_packer:
             dest_dir = os.path.join(dest_dir, sample.unpacker.name)
@@ -31,8 +31,11 @@ class IOHandler(object):
         engine.register_client(client)
         heartbeat.start()
         threading.Thread(target=engine.emu).start()
-        event.wait()
+        status = event.wait(timeout=60)
         heartbeat.stop()
         engine.stop()
-        print(f"\nEmulation of {os.path.basename(sample.path)} finished.\n"
-              f"--- Saved to {dest_file} ---\n")
+        if status:
+            print(f"\nEmulation of {os.path.basename(sample.path)} finished.\n"
+                f"--- Saved to {dest_file} ---\n")
+        else:
+            print(f"\nEmulation of {os.path.basename(sample.path)} is timeout.")
